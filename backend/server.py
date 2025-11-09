@@ -204,6 +204,14 @@ def health():
 
 
 if __name__ == '__main__':
-    print("Starting Path Optimization Server...")
-    print("Server running on http://localhost:5000")
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    import os
+    port = int(os.environ.get('PORT', 5000))
+    # For production (Render)
+    if os.environ.get('RENDER'):
+        print(f"Starting Path Optimization Server on port {port}...")
+        app.run(host='0.0.0.0', port=port, debug=False)
+    else:
+        # For local development
+        print("Starting Path Optimization Server...")
+        print("Server running on http://localhost:5000")
+        app.run(debug=True, host='0.0.0.0', port=5000)
