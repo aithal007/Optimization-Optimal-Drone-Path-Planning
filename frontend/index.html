@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Path Optimization - Gradient Descent Visualizer</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🚁 Path Optimization using Gradient Descent</h1>
+            <p class="subtitle">Find the optimal path from start to goal while avoiding obstacles</p>
+        </header>
+
+        <div class="main-content">
+            <!-- Canvas Section -->
+            <div class="canvas-section">
+                <canvas id="pathCanvas" width="800" height="600"></canvas>
+                
+                <div class="canvas-controls">
+                    <div class="mode-selector">
+                        <button id="modeStart" class="mode-btn active" data-mode="start">Set Start</button>
+                        <button id="modeGoal" class="mode-btn" data-mode="goal">Set Goal</button>
+                        <button id="modeObstacle" class="mode-btn" data-mode="obstacle">Add Obstacle</button>
+                    </div>
+                    
+                    <div class="action-buttons">
+                        <button id="btnClear" class="btn btn-warning">Clear All</button>
+                        <button id="btnOptimize" class="btn btn-primary">Run Optimization</button>
+                        <button id="btnStop" class="btn btn-danger" style="display: none;">Stop</button>
+                    </div>
+                </div>
+
+                <div class="status-info">
+                    <div class="status-item">
+                        <span class="status-label">Status:</span>
+                        <span id="statusText" class="status-value">Ready - Click to set start point</span>
+                    </div>
+                    <div class="status-item">
+                        <span class="status-label">Iteration:</span>
+                        <span id="iterationText" class="status-value">0</span>
+                    </div>
+                    <div class="status-item">
+                        <span class="status-label">Current Cost:</span>
+                        <span id="costText" class="status-value">N/A</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Controls & Graph Section -->
+            <div class="sidebar">
+                <!-- Parameter Controls -->
+                <div class="control-panel">
+                    <h2>🎛️ Parameters</h2>
+                    
+                    <div class="control-group">
+                        <label for="nPoints">Number of Waypoints:</label>
+                        <input type="number" id="nPoints" min="5" max="100" value="25" step="1">
+                    </div>
+
+                    <div class="control-group">
+                        <label for="safetyMargin">Safety Margin:</label>
+                        <input type="number" id="safetyMargin" min="0" max="50" value="5.0" step="0.5">
+                    </div>
+
+                    <div class="control-group">
+                        <label for="learningRate">Learning Rate (α):</label>
+                        <input type="number" id="learningRate" min="0.0001" max="1" value="0.002" step="0.001">
+                    </div>
+                    
+                    <div class="control-group">
+                        <label for="momentum">Momentum:</label>
+                        <input type="number" id="momentum" min="0" max="1" value="0.85" step="0.05">
+                    </div>
+
+                    <div class="control-group">
+                        <label for="nIterations">Iterations:</label>
+                        <input type="number" id="nIterations" min="50" max="5000" value="800" step="50">
+                    </div>
+
+                    <h3 style="margin-top: 20px;">Cost Weights</h3>
+
+                    <div class="control-group">
+                        <label for="weightLength">Length (w<sub>len</sub>):</label>
+                        <input type="number" id="weightLength" min="0" max="100" value="1.0" step="0.1">
+                    </div>
+
+                    <div class="control-group">
+                        <label for="weightSmooth">Smoothness (w<sub>smooth</sub>):</label>
+                        <input type="number" id="weightSmooth" min="0" max="500" value="5.0" step="0.5">
+                    </div>
+
+                    <div class="control-group">
+                        <label for="weightObstacle">Obstacle (w<sub>obs</sub>):</label>
+                        <input type="number" id="weightObstacle" min="0" max="10000" value="1500" step="100">
+                    </div>
+                </div>
+
+                <!-- Cost Graph -->
+                <div class="graph-panel">
+                    <h2>📊 Cost vs Iteration</h2>
+                    <canvas id="costGraph" width="400" height="250"></canvas>
+                    
+                    <div class="cost-breakdown" id="costBreakdown">
+                        <h3>Cost Breakdown</h3>
+                        <div class="cost-item">
+                            <span>Total:</span>
+                            <span id="costTotal">N/A</span>
+                        </div>
+                        <div class="cost-item">
+                            <span>Length:</span>
+                            <span id="costLength">N/A</span>
+                        </div>
+                        <div class="cost-item">
+                            <span>Smoothness:</span>
+                            <span id="costSmooth">N/A</span>
+                        </div>
+                        <div class="cost-item">
+                            <span>Obstacle:</span>
+                            <span id="costObstacle">N/A</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Instructions -->
+                <div class="instructions">
+                    <h2>📖 How to Use</h2>
+                    <ol>
+                        <li>Click "Set Start" and click on canvas to place start point (green)</li>
+                        <li>Click "Set Goal" and click on canvas to place goal point (red)</li>
+                        <li>Click "Add Obstacle" and click-drag on canvas to create obstacles</li>
+                        <li>Adjust parameters using the sliders</li>
+                        <li>Click "Run Optimization" to watch the path optimize in real-time!</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
