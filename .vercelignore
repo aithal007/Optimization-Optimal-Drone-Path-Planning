@@ -1,0 +1,12 @@
+.venv
+venv
+__pycache__
+*.pyc
+*.log
+.git
+.gitignore
+*.md
+backend/quick_test.py
+backend/test_optimizer.py
+start_server.bat
+start_server.ps1

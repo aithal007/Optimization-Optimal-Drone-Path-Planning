@@ -48,3 +48,6 @@ htmlcov/
 # Other
 .env
 *.bak
+
+# Vercel
+.vercel
