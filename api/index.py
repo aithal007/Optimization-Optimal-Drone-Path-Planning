@@ -4,34 +4,46 @@ Vercel serverless function for path optimization API
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import numpy as np
-import sys
-import os
 
 # Import optimizer from same directory
 from optimizer import PathOptimizer
 
 # Create Flask app
 app = Flask(__name__)
-CORS(app)
+CORS(app, resources={r"/api/*": {"origins": "*"}})
 
-@app.route('/api/health', methods=['GET'])
+@app.route('/')
+@app.route('/api')
+@app.route('/api/')
+def home():
+    """Home endpoint"""
+    return jsonify({'status': 'ok', 'message': 'Path Optimization API', 'version': '1.0'})
+
+@app.route('/api/health')
 def health():
     """Health check endpoint"""
-    return jsonify({'status': 'ok', 'message': 'Path Optimization API is running'})
+    return jsonify({'status': 'ok', 'message': 'API is running'})
 
 @app.route('/api/optimize', methods=['POST', 'OPTIONS'])
 def optimize():
     """Main optimization endpoint"""
     if request.method == 'OPTIONS':
-        return '', 200
+        response = jsonify({'status': 'ok'})
+        response.headers.add('Access-Control-Allow-Origin', '*')
+        response.headers.add('Access-Control-Allow-Headers', 'Content-Type')
+        response.headers.add('Access-Control-Allow-Methods', 'POST, OPTIONS')
+        return response, 200
     
     try:
         data = request.get_json()
         
+        if not data:
+            return jsonify({'error': 'No data provided'}), 400
+        
         # Extract parameters
-        start = tuple(data['start'])
-        goal = tuple(data['goal'])
-        obstacles = data['obstacles']
+        start = tuple(data.get('start', [0, 0]))
+        goal = tuple(data.get('goal', [100, 100]))
+        obstacles = data.get('obstacles', [])
         n_points = data.get('n_points', 20)
         safety_margin = data.get('safety_margin', 5.0)
         weights = data.get('weights', {'length': 1.0, 'smoothness': 5.0, 'obstacle': 1500.0})
@@ -50,20 +62,26 @@ def optimize():
         )
         
         # Run optimization
-        results = optimizer.optimize(n_iterations=n_iterations, learning_rate=learning_rate, momentum=momentum)
+        results = optimizer.optimize(
+            n_iterations=n_iterations, 
+            learning_rate=learning_rate, 
+            momentum=momentum
+        )
         
-        return jsonify({
+        response = jsonify({
             'results': results,
             'final_cost': results[-1]['cost'],
             'initial_cost': results[0]['cost'],
             'cost_history': optimizer.get_cost_history()
         })
+        response.headers.add('Access-Control-Allow-Origin', '*')
+        return response
     
     except Exception as e:
-        return jsonify({'error': str(e)}), 400
+        import traceback
+        error_msg = f"{str(e)}\n{traceback.format_exc()}"
+        return jsonify({'error': error_msg}), 500
 
-# For Vercel
-def handler(request):
-    with app.request_context(request.environ):
-        return app.full_dispatch_request()
+# Vercel serverless function handler
+app = app
 
