@@ -30,6 +30,24 @@
                         <button id="btnOptimize" class="btn btn-primary">Run Optimization</button>
                         <button id="btnStop" class="btn btn-danger" style="display: none;">Stop</button>
                     </div>
+                    
+                    <div class="zoom-controls" style="margin-top: 20px; padding: 15px; background: #f8f9fa; border-radius: 8px;">
+                        <h3 style="margin: 0 0 10px 0; font-size: 14px;">🔍 View Controls</h3>
+                        <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px;">
+                            <button id="btnZoomIn" class="btn btn-secondary" style="flex: 1; min-width: 80px;">Zoom In</button>
+                            <button id="btnZoomOut" class="btn btn-secondary" style="flex: 1; min-width: 80px;">Zoom Out</button>
+                            <button id="btnResetZoom" class="btn btn-secondary" style="flex: 1; min-width: 80px;">Reset</button>
+                        </div>
+                        <div style="text-align: center; font-weight: bold; color: #007bff; margin-bottom: 8px;">
+                            <span id="zoomLevel">100%</span>
+                        </div>
+                        <p style="margin: 0; font-size: 11px; color: #666; line-height: 1.4;">
+                            💡 <strong>Tips:</strong><br>
+                            • Scroll to zoom in/out<br>
+                            • Ctrl+Click or Middle-click to pan<br>
+                            • Drag to move around
+                        </p>
+                    </div>
                 </div>
 
                 <div class="status-info">

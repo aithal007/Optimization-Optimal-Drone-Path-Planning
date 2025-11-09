@@ -15,7 +15,15 @@ const state = {
     
     // Temp state for obstacle drawing
     tempObstacle: null,
-    isDrawingObstacle: false
+    isDrawingObstacle: false,
+    
+    // Zoom and Pan state
+    scale: 1,
+    offsetX: 0,
+    offsetY: 0,
+    isPanning: false,
+    lastMouseX: 0,
+    lastMouseY: 0
 };
 
 // Canvas Setup
@@ -54,11 +62,27 @@ function initializeEventListeners() {
     canvas.addEventListener('mousedown', handleCanvasMouseDown);
     canvas.addEventListener('mousemove', handleCanvasMouseMove);
     canvas.addEventListener('mouseup', handleCanvasMouseUp);
+    canvas.addEventListener('wheel', handleWheel, { passive: false });
+    
+    // Zoom button events
+    document.getElementById('btnZoomIn').addEventListener('click', () => zoomAt(canvas.width/2, canvas.height/2, 1.2));
+    document.getElementById('btnZoomOut').addEventListener('click', () => zoomAt(canvas.width/2, canvas.height/2, 0.8));
+    document.getElementById('btnResetZoom').addEventListener('click', resetZoom);
 }
 
 // Canvas Mouse Handlers
 function handleCanvasMouseDown(e) {
     const pos = getMousePos(e);
+    
+    // Middle mouse button or Ctrl+Left click for panning
+    if (e.button === 1 || (e.button === 0 && e.ctrlKey)) {
+        state.isPanning = true;
+        state.lastMouseX = e.clientX;
+        state.lastMouseY = e.clientY;
+        canvas.style.cursor = 'grabbing';
+        e.preventDefault();
+        return;
+    }
     
     if (state.mode === 'start') {
         state.start = pos;
@@ -75,6 +99,17 @@ function handleCanvasMouseDown(e) {
 }
 
 function handleCanvasMouseMove(e) {
+    if (state.isPanning) {
+        const dx = e.clientX - state.lastMouseX;
+        const dy = e.clientY - state.lastMouseY;
+        state.offsetX += dx;
+        state.offsetY += dy;
+        state.lastMouseX = e.clientX;
+        state.lastMouseY = e.clientY;
+        drawCanvas();
+        return;
+    }
+    
     if (state.isDrawingObstacle && state.tempObstacle) {
         const pos = getMousePos(e);
         const dx = pos.x - state.tempObstacle.center.x;
@@ -85,6 +120,12 @@ function handleCanvasMouseMove(e) {
 }
 
 function handleCanvasMouseUp(e) {
+    if (state.isPanning) {
+        state.isPanning = false;
+        canvas.style.cursor = 'default';
+        return;
+    }
+    
     if (state.isDrawingObstacle && state.tempObstacle) {
         if (state.tempObstacle.radius > 5) {
             state.obstacles.push({
@@ -104,9 +145,21 @@ function getMousePos(e) {
     const scaleX = canvas.width / rect.width;
     const scaleY = canvas.height / rect.height;
     
+    const canvasX = (e.clientX - rect.left) * scaleX;
+    const canvasY = (e.clientY - rect.top) * scaleY;
+    
+    // Transform to world coordinates
     return {
-        x: (e.clientX - rect.left) * scaleX,
-        y: (e.clientY - rect.top) * scaleY
+        x: (canvasX - state.offsetX) / state.scale,
+        y: (canvasY - state.offsetY) / state.scale
+    };
+}
+
+// Transform world coordinates to canvas coordinates
+function worldToCanvas(x, y) {
+    return {
+        x: x * state.scale + state.offsetX,
+        y: y * state.scale + state.offsetY
     };
 }
 
@@ -115,6 +168,11 @@ function drawCanvas() {
     // Clear canvas
     ctx.fillStyle = '#f8f9fa';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    // Save context and apply transformations
+    ctx.save();
+    ctx.translate(state.offsetX, state.offsetY);
+    ctx.scale(state.scale, state.scale);
     
     // Draw grid
     drawGrid();
@@ -153,25 +211,34 @@ function drawCanvas() {
         ctx.font = 'bold 14px Arial';
         ctx.fillText('GOAL', state.goal.x + 15, state.goal.y + 5);
     }
+    
+    // Restore context
+    ctx.restore();
 }
 
 function drawGrid() {
     ctx.strokeStyle = '#e0e0e0';
-    ctx.lineWidth = 0.5;
+    ctx.lineWidth = 1 / state.scale; // Keep line width constant
+    
+    const gridSize = 50;
+    const startX = Math.floor(-state.offsetX / state.scale / gridSize) * gridSize;
+    const startY = Math.floor(-state.offsetY / state.scale / gridSize) * gridSize;
+    const endX = startX + (canvas.width / state.scale) + gridSize;
+    const endY = startY + (canvas.height / state.scale) + gridSize;
     
     // Vertical lines
-    for (let x = 0; x < canvas.width; x += 50) {
+    for (let x = startX; x < endX; x += gridSize) {
         ctx.beginPath();
-        ctx.moveTo(x, 0);
-        ctx.lineTo(x, canvas.height);
+        ctx.moveTo(x, startY);
+        ctx.lineTo(x, endY);
         ctx.stroke();
     }
     
     // Horizontal lines
-    for (let y = 0; y < canvas.height; y += 50) {
+    for (let y = startY; y < endY; y += gridSize) {
         ctx.beginPath();
-        ctx.moveTo(0, y);
-        ctx.lineTo(canvas.width, y);
+        ctx.moveTo(startX, y);
+        ctx.lineTo(endX, y);
         ctx.stroke();
     }
 }
@@ -395,6 +462,51 @@ function stopOptimization() {
     document.getElementById('btnOptimize').style.display = 'inline-block';
     document.getElementById('btnStop').style.display = 'none';
     updateStatus('Optimization complete!');
+}
+
+// Zoom and Pan Functions
+function handleWheel(e) {
+    e.preventDefault();
+    
+    const rect = canvas.getBoundingClientRect();
+    const mouseX = (e.clientX - rect.left) * (canvas.width / rect.width);
+    const mouseY = (e.clientY - rect.top) * (canvas.height / rect.height);
+    
+    const zoomFactor = e.deltaY < 0 ? 1.1 : 0.9;
+    zoomAt(mouseX, mouseY, zoomFactor);
+}
+
+function zoomAt(x, y, factor) {
+    const oldScale = state.scale;
+    state.scale *= factor;
+    
+    // Limit zoom range
+    state.scale = Math.max(0.1, Math.min(5, state.scale));
+    
+    const actualFactor = state.scale / oldScale;
+    
+    // Adjust offset to zoom towards the point
+    state.offsetX = x - (x - state.offsetX) * actualFactor;
+    state.offsetY = y - (y - state.offsetY) * actualFactor;
+    
+    drawCanvas();
+    updateZoomDisplay();
+}
+
+function resetZoom() {
+    state.scale = 1;
+    state.offsetX = 0;
+    state.offsetY = 0;
+    drawCanvas();
+    updateZoomDisplay();
+}
+
+function updateZoomDisplay() {
+    const zoomPercent = Math.round(state.scale * 100);
+    const zoomElement = document.getElementById('zoomLevel');
+    if (zoomElement) {
+        zoomElement.textContent = `${zoomPercent}%`;
+    }
 }
 
 function clearAll() {
